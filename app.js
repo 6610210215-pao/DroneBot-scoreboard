@@ -185,14 +185,49 @@ function renderSingleTeam(team) {
     const tbody = document.getElementById('scoreBody');
     if(!tbody) return;
 
-    let minMs = Infinity;
-    if (team.laps && team.laps.length > 0) {
-        minMs = Math.min(...team.laps.map(l => timeToMs(l.timeStr)));
-    }
+    // 1. กรองเฉพาะรอบที่มีเวลามากกว่า 0 (ป้องกันกรณีค่าเป็น 0 หรือว่างเปล่า)
+    const validLaps = team.laps.filter(l => timeToMs(l.timeStr) > 0);
+    
+    // 2. หาเวลาที่น้อยที่สุดจากรอบที่ถูกต้อง
+    const minMs = validLaps.length > 0 ? Math.min(...validLaps.map(l => timeToMs(l.timeStr))) : Infinity;
 
-    tbody.innerHTML = team.laps.map(l => {
-        const currentMs = timeToMs(l.timeStr);
-        const isBest = currentMs === minMs && team.laps.length > 0;
+    // 3. หาตำแหน่ง (Index) ของรอบ *แรกสุด* ที่ทำเวลาได้เท่ากับเวลาที่น้อยที่สุด
+    const bestLapIndex = team.laps.findIndex(l => timeToMs(l.timeStr) === minMs);
+
+    // 4. วนลูปแสดงผล โดยเช็คว่า index ปัจจุบัน ตรงกับ bestLapIndex ที่หาได้หรือไม่
+    tbody.innerHTML = team.laps.map((l, index) => {
+        // ให้ isBest เป็น true เฉพาะรอบที่ตรงกับ bestLapIndex และต้องมีข้อมูลเวลาที่ถูกต้อง
+        const isBest = index === bestLapIndex && validLaps.length > 0;
+
+        return `
+        <tr class="border-b border-white/5 transition-all ${isBest ? 'best-round-row' : ''}">
+            <td class="p-10 race-font font-black italic text-5xl">
+                ROUND ${l.roundNum}
+                ${isBest ? '<span class="ml-4 text-sm bg-green-600 text-white px-3 py-1 not-italic rounded-md shadow-lg shadow-green-900/20">THE BEST</span>' : ''}
+            </td>
+            <td class="p-10 digital-font text-8xl text-right font-black ${isBest ? 'text-green-500' : 'text-red-500'}">
+                ${l.timeStr}
+            </td>
+        </tr>`;
+    }).join('') || `<tr><td class="p-20 text-center opacity-20 italic">No record found</td></tr>`;
+}// แสดงผลคะแนนรายทีมที่เลือก
+function renderSingleTeam(team) {
+    const tbody = document.getElementById('scoreBody');
+    if(!tbody) return;
+
+    // 1. กรองเฉพาะรอบที่มีเวลามากกว่า 0 (ป้องกันกรณีค่าเป็น 0 หรือว่างเปล่า)
+    const validLaps = team.laps.filter(l => timeToMs(l.timeStr) > 0);
+    
+    // 2. หาเวลาที่น้อยที่สุดจากรอบที่ถูกต้อง
+    const minMs = validLaps.length > 0 ? Math.min(...validLaps.map(l => timeToMs(l.timeStr))) : Infinity;
+
+    // 3. หาตำแหน่ง (Index) ของรอบ *แรกสุด* ที่ทำเวลาได้เท่ากับเวลาที่น้อยที่สุด
+    const bestLapIndex = team.laps.findIndex(l => timeToMs(l.timeStr) === minMs);
+
+    // 4. วนลูปแสดงผล โดยเช็คว่า index ปัจจุบัน ตรงกับ bestLapIndex ที่หาได้หรือไม่
+    tbody.innerHTML = team.laps.map((l, index) => {
+        // ให้ isBest เป็น true เฉพาะรอบที่ตรงกับ bestLapIndex และต้องมีข้อมูลเวลาที่ถูกต้อง
+        const isBest = index === bestLapIndex && validLaps.length > 0;
 
         return `
         <tr class="border-b border-white/5 transition-all ${isBest ? 'best-round-row' : ''}">
